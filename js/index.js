@@ -51,16 +51,30 @@ class InteractJSDRM {
         }
     }
 
-    // Abre uma nova janela
+    // Abre uma nova janela ou minimiza se já estiver aberta (desktop) / foca (mobile)
     openNewWindow(data) {
         const container = document.querySelector(".windowsContainer");
 
         const idButton = data.buttonParent.id;
         
-        // Se já existe janela para este botão, apenas traz ela de volta
+        // Se já existe janela para este botão
         if (this.#hasPageInButton.has(idButton)) {
             const windowElement = this.#hasPageInButton.get(idButton);
             
+            // Se a janela está no DOM (visível)
+            if (this.#hasPages.has(windowElement.id)) {
+                // Mobile: apenas foca a janela
+                if (this.#isMobile) {
+                    this.handleFocus(windowElement, idButton);
+                    return;
+                }
+                
+                // Desktop: minimiza (toggle)
+                this.minimizeWindow(windowElement);
+                return;
+            }
+            
+            // Se não está no DOM, traz ela de volta
             this.#hasPages.set(windowElement.id, windowElement);
             container.appendChild(windowElement);
             
@@ -189,6 +203,11 @@ class InteractJSDRM {
         const yPosition = container.getBoundingClientRect().height * 0.5;
 
         if (this.#isMobile) {
+            // Mobile: janela ocupa tela inteira
+            window.style.top = '0px';
+            window.style.left = '0px';
+            window.style.width = '100%';
+            window.style.height = '100%';
             window.style.transform = 'translate(0px, 0px)';
             window.classList.add('mobile-fullscreen');
 
@@ -212,21 +231,27 @@ class InteractJSDRM {
             return;
         }
 
+        // Desktop: posicionamento baseado na quantidade de janelas
         if (this.#hasPages.size === 1) {
             window.style.top = `${top}px`;
             window.style.left = `0px`;
             window.style.width = "50vw";
-            window.style.height = "91vh";
+            window.style.height = "45vh";
         } else if (this.#hasPages.size === 2) {
+            window.style.top = `${yPosition}px`;
+            window.style.left = `0px`;
+            window.style.width = "50vw";
+            window.style.height = "45vh";
+        } else if (this.#hasPages.size === 3) {
             window.style.top = `${top}px`;
             window.style.left = `${xPosition}px`;
             window.style.width = "50vw";
-            window.style.height = "91vh";
+            window.style.height = "45vh";
         } else {
-            window.style.top = `${top}px`;
-            window.style.left = `${xPosition * 0.5}px`;
+            window.style.top = `${yPosition}px`;
+            window.style.left = `${xPosition}px`;
             window.style.width = "50vw";
-            window.style.height = "91vh";
+            window.style.height = "45vh";
         }
         
         window.style.transform = `translate(0px, 0px)`;
@@ -447,9 +472,37 @@ class InteractJSDRM {
         this.#restoreWindowState(targetWindow);
     }
 
-    // Função que "minimiza" a janela (remove do DOM)
+    // Função que "minimiza" a janela (remove do DOM mas mantém no cache)
     minimizeWindow(targetWindow) {
+        const windowId = targetWindow.getAttribute("id");
+        
+        // Remove do mapa de janelas ativas
+        if (this.#hasPages.has(windowId)) {
+            this.#hasPages.delete(windowId);
+        }
+        
+        // Remove do DOM
         targetWindow.remove();
+        
+        // Atualiza o estado do botão pai para unfocused
+        const buttonParentId = this.#getButtonParentIdByWindow(windowId);
+        if (buttonParentId) {
+            const buttonParent = document.getElementById(buttonParentId);
+            if (buttonParent) {
+                buttonParent.classList.remove("focusButton");
+                buttonParent.classList.add("unfocusButton");
+            }
+        }
+    }
+
+    // Helper para encontrar o botão pai de uma janela
+    #getButtonParentIdByWindow(windowId) {
+        for (const [buttonId, window] of this.#hasPageInButton.entries()) {
+            if (window.id === windowId) {
+                return buttonId;
+            }
+        }
+        return null;
     }
 
     // Valida se é possível adicionar nova janela
@@ -470,7 +523,6 @@ class InteractJSDRM {
     // Remove foco de todos os botões
     #unfocusAllButtonsParents() {
         const buttonsParents = document.querySelectorAll('.buttonControlMenu');
-
         buttonsParents.forEach((button) => {
             button.classList.remove("unfocusButton");
             button.classList.remove("focusButton");

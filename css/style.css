@@ -54,7 +54,7 @@
     box-shadow: 1px 1px 15px -7px rgba(0,0,0,0.75);
     -webkit-box-shadow: 1px 1px 15px -7px rgba(0,0,0,0.75);
     -moz-box-shadow: 1px 1px 15px -7px rgba(0,0,0,0.75);
-    transition: transform .1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: transform .06s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .windowContainer.unfocused {
@@ -102,8 +102,7 @@
     max-width: 24rem;
     font-size: 14px;
     color: white;
-    font-weight: 400;
-    font-style: italic;
+    font-weight: 550;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
